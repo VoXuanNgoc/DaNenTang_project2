@@ -18,7 +18,7 @@ export const FilterChip: React.FC<FilterChipProps> = React.memo(({
 }) => {
   return (
     <TouchableOpacity
-      activeOpacity={0.7}
+      activeOpacity={0.75}
       onPress={onPress}
       style={[
         styles.chip,
@@ -27,7 +27,7 @@ export const FilterChip: React.FC<FilterChipProps> = React.memo(({
       ]}
       accessibilityRole="button"
       accessibilityState={{ selected: isSelected }}
-      accessibilityLabel={`Filter by ${label}`}
+      accessibilityLabel={`Lọc theo ${label}`}
     >
       <Text
         style={[
@@ -44,9 +44,9 @@ export const FilterChip: React.FC<FilterChipProps> = React.memo(({
 const styles = StyleSheet.create({
   chip: {
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+    paddingVertical: 9,
     borderRadius: borderRadius.full,
-    borderWidth: 1.5,
+    borderWidth: 1.2,
     marginRight: spacing.sm,
     alignItems: 'center',
     justifyContent: 'center',
@@ -54,6 +54,11 @@ const styles = StyleSheet.create({
   chipSelected: {
     backgroundColor: colors.primary,
     borderColor: colors.primary,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 3,
   },
   chipUnselected: {
     backgroundColor: colors.card,
@@ -67,6 +72,6 @@ const styles = StyleSheet.create({
     color: colors.white,
   },
   labelUnselected: {
-    color: colors.textSecondary,
+    color: colors.secondaryText,
   },
 });

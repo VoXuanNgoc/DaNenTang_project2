@@ -1,43 +1,44 @@
 export const colors = {
-  // Primary brand palette
-  primary: '#2563EB', // Vibrant royal blue
-  primaryDark: '#1D4ED8',
-  primaryLight: '#3B82F6',
-  primarySubtle: '#EFF6FF',
+  // Primary Palette - Modern University Purple
+  primary: '#6C4AB6',
+  primaryDark: '#49317D',
+  primaryLight: '#F1ECFA',
+  primarySubtle: '#F7F4FD',
 
-  // Status colors
-  available: '#10B981', // Emerald green
-  availableBg: '#ECFDF5',
-  availableBorder: '#A7F3D0',
+  // Accent
+  accent: '#F6C945', // Highlight yellow for accents and attention
+  accentLight: '#FEF9E7',
 
-  occupied: '#EF4444', // Coral red
-  occupiedBg: '#FEF2F2',
-  occupiedBorder: '#FECACA',
-
-  confirmed: '#2563EB',
-  confirmedBg: '#EFF6FF',
-  confirmedBorder: '#BFDBFE',
-
-  cancelled: '#64748B', // Muted slate gray
-  cancelledBg: '#F1F5F9',
-  cancelledBorder: '#CBD5E1',
-
-  // Neutral tones
-  background: '#F8FAFC', // Ultra clean soft background
-  card: '#FFFFFF',
-  text: '#0F172A', // Deep slate for high contrast
-  textSecondary: '#64748B', // Subtitle text
-  textMuted: '#94A3B8',
-  border: '#E2E8F0',
-  divider: '#F1F5F9',
-
-  // Accents
-  accent: '#F59E0B',
-  accentSubtle: '#FFFBEB',
-  surfaceHighlight: '#F8FAFC',
+  // Neutrals
   white: '#FFFFFF',
-  black: '#000000',
-  overlay: 'rgba(15, 23, 42, 0.45)',
+  background: '#F8F7FC',
+  card: '#FFFFFF',
+  border: '#E8E3F0',
+  divider: '#F1ECFA',
+
+  // Typography
+  text: '#25213A',
+  secondaryText: '#77728A',
+  textMuted: '#A09BB0',
+
+  // Status Indicators
+  available: '#27AE60',
+  availableBg: '#EAF7EE',
+  availableBorder: '#BDE7CC',
+
+  occupied: '#E65B5B',
+  occupiedBg: '#FDF0F0',
+  occupiedBorder: '#F9D1D1',
+
+  confirmed: '#6C4AB6',
+  confirmedBg: '#F1ECFA',
+  confirmedBorder: '#D8CEEF',
+
+  cancelled: '#77728A',
+  cancelledBg: '#F0EFF5',
+  cancelledBorder: '#DDD9E8',
+
+  overlay: 'rgba(37, 33, 58, 0.45)',
 } as const;
 
 export type ColorKey = keyof typeof colors;

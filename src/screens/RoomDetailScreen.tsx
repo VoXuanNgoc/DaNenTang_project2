@@ -13,7 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { BrowseStackScreenProps } from '../navigation/types';
 import { useRoom } from '../hooks/useRooms';
-import { useBookingStore } from '../store/bookingStore';
+import { useBookingStore, CURRENT_STUDENT } from '../store/bookingStore';
 import { TimeSlot } from '../components/TimeSlot';
 import { STANDARD_TIME_SLOTS, formatDisplayDate } from '../utils/bookingUtils';
 import { colors } from '../theme/colors';
@@ -25,15 +25,16 @@ export const RoomDetailScreen: React.FC<BrowseStackScreenProps<'RoomDetail'>> = 
 }) => {
   const { roomId } = route.params;
   const insets = useSafeAreaInsets();
-  const { data: room, isLoading, isError, refetch } = useRoom(roomId);
+  const { data: room, isLoading, isError } = useRoom(roomId);
 
-  const bookings = useBookingStore((state) => state.bookings);
   const addBooking = useBookingStore((state) => state.addBooking);
   const isSlotBooked = useBookingStore((state) => state.isSlotBooked);
 
-  // Generate next 7 days for the date selector
+  // Tạo danh sách 7 ngày tới (không cho chọn ngày quá khứ)
   const availableDates = useMemo(() => {
     const dates = [];
+    const vietnameseDayNames = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+
     for (let i = 0; i < 7; i++) {
       const d = new Date();
       d.setDate(d.getDate() + i);
@@ -41,9 +42,10 @@ export const RoomDetailScreen: React.FC<BrowseStackScreenProps<'RoomDetail'>> = 
       const month = String(d.getMonth() + 1).padStart(2, '0');
       const day = String(d.getDate()).padStart(2, '0');
       const isoDate = `${year}-${month}-${day}`;
-      const dayName = i === 0 ? 'Today' : d.toLocaleDateString('en-US', { weekday: 'short' });
+      const dayName = i === 0 ? 'Hôm nay' : vietnameseDayNames[d.getDay()];
       const dayNumber = d.getDate();
-      dates.push({ isoDate, dayName, dayNumber });
+      const monthNumber = d.getMonth() + 1;
+      dates.push({ isoDate, dayName, dayNumber, monthNumber });
     }
     return dates;
   }, []);
@@ -58,17 +60,19 @@ export const RoomDetailScreen: React.FC<BrowseStackScreenProps<'RoomDetail'>> = 
   const handleBookingSubmit = () => {
     if (!room) return;
 
-    if (!selectedDate) {
-      Alert.alert('Date Required', 'Please choose a reservation date first.');
+    // 1. Kiểm tra ngày
+    if (!selectedDate || selectedDate.trim() === '') {
+      Alert.alert('Chưa chọn ngày', 'Vui lòng chọn ngày đặt phòng.', [{ text: 'Đã hiểu' }]);
       return;
     }
 
+    // 2. Kiểm tra khung giờ
     if (!selectedSlot) {
-      Alert.alert('Time Slot Required', 'Please select a time slot to continue booking.');
+      Alert.alert('Chưa chọn khung giờ', 'Vui lòng chọn khung giờ.', [{ text: 'Đã hiểu' }]);
       return;
     }
 
-    // Call store booking action (which executes the conflict prevention engine)
+    // Gọi store booking action với logic kiểm tra overlap chống trùng lịch
     const result = addBooking({
       roomId: room.id,
       roomName: room.name,
@@ -76,45 +80,30 @@ export const RoomDetailScreen: React.FC<BrowseStackScreenProps<'RoomDetail'>> = 
       date: selectedDate,
       startTime: selectedSlot.startTime,
       endTime: selectedSlot.endTime,
-      studentName: 'Nguyen Van A',
-      studentId: 'SV2024001',
+      studentName: CURRENT_STUDENT.name,
+      studentId: CURRENT_STUDENT.studentId,
     });
 
     if (!result.success) {
       Alert.alert(
-        'Booking Conflict',
-        result.message || 'This time slot is already booked. Please choose another time.',
-        [{ text: 'OK' }]
+        'Trùng lịch đặt phòng',
+        result.message || 'Khung giờ này đã được đặt. Vui lòng chọn khung giờ khác.',
+        [{ text: 'Chọn giờ khác' }]
       );
       return;
     }
 
-    // Success confirmation dialog
-    Alert.alert(
-      'Booking Confirmed! 🎉',
-      `Your reservation for ${room.name} on ${formatDisplayDate(selectedDate)} (${selectedSlot.label}) has been successfully confirmed.`,
-      [
-        {
-          text: 'Book Another Slot',
-          style: 'cancel',
-          onPress: () => setSelectedSlotId(null),
-        },
-        {
-          text: 'View My Bookings',
-          onPress: () => {
-            // Navigate to My Bookings tab
-            navigation.getParent()?.navigate('MyBookingsTab');
-          },
-        },
-      ]
-    );
+    // Nếu hợp lệ, mở màn hình xác nhận BookingConfirmationScreen
+    if (result.booking) {
+      navigation.navigate('BookingConfirmation', { booking: result.booking });
+    }
   };
 
   if (isLoading) {
     return (
       <View style={styles.centerContainer}>
         <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={styles.loadingText}>Loading room details...</Text>
+        <Text style={styles.loadingText}>Đang tải thông tin chi tiết phòng...</Text>
       </View>
     );
   }
@@ -123,9 +112,9 @@ export const RoomDetailScreen: React.FC<BrowseStackScreenProps<'RoomDetail'>> = 
     return (
       <View style={styles.centerContainer}>
         <Ionicons name="alert-circle-outline" size={48} color={colors.occupied} />
-        <Text style={styles.errorTitle}>Room Not Found</Text>
+        <Text style={styles.errorTitle}>Không tìm thấy phòng</Text>
         <TouchableOpacity style={styles.backButtonCenter} onPress={() => navigation.goBack()}>
-          <Text style={styles.backButtonText}>Return to Browse</Text>
+          <Text style={styles.backButtonText}>Quay lại danh sách</Text>
         </TouchableOpacity>
       </View>
     );
@@ -137,28 +126,28 @@ export const RoomDetailScreen: React.FC<BrowseStackScreenProps<'RoomDetail'>> = 
     <View style={styles.container}>
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 100 }]}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 110 }]}
       >
-        {/* Large Room Image Banner */}
+        {/* Ảnh phòng lớn */}
         <View style={styles.imageWrapper}>
           <Image source={{ uri: room.image }} style={styles.heroImage} resizeMode="cover" />
 
-          {/* Floating Back Button */}
+          {/* Nút quay lại floating */}
           <TouchableOpacity
             style={[styles.floatingBackButton, { top: insets.top + spacing.sm }]}
             onPress={() => navigation.goBack()}
             accessibilityRole="button"
-            accessibilityLabel="Go back"
+            accessibilityLabel="Quay lại"
           >
             <Ionicons name="arrow-back" size={22} color={colors.text} />
           </TouchableOpacity>
 
-          {/* Overlaid Badges */}
+          {/* Badges trên ảnh */}
           <View style={styles.imageOverlayBottom}>
             <View style={styles.typeBadge}>
               <Ionicons
-                name={room.type === 'Lab' ? 'laptop-outline' : 'book-outline'}
-                size={12}
+                name={room.type.includes('Lab') ? 'laptop-outline' : 'book-outline'}
+                size={13}
                 color={colors.white}
               />
               <Text style={styles.typeBadgeText}>{room.type}</Text>
@@ -181,13 +170,13 @@ export const RoomDetailScreen: React.FC<BrowseStackScreenProps<'RoomDetail'>> = 
                   isAvailable ? styles.statusAvailableText : styles.statusOccupiedText,
                 ]}
               >
-                {isAvailable ? 'Available' : 'Occupied'}
+                {isAvailable ? 'Còn trống' : 'Đang được sử dụng'}
               </Text>
             </View>
           </View>
         </View>
 
-        {/* Room Information Card */}
+        {/* Thông tin phòng học */}
         <View style={styles.body}>
           <Text style={styles.roomName}>{room.name}</Text>
 
@@ -206,26 +195,28 @@ export const RoomDetailScreen: React.FC<BrowseStackScreenProps<'RoomDetail'>> = 
 
             <View style={styles.metaChip}>
               <Ionicons name="people-outline" size={15} color={colors.primary} />
-              <Text style={styles.metaChipText}>{room.capacity} seats</Text>
+              <Text style={styles.metaChipText}>{room.capacity} chỗ ngồi</Text>
             </View>
           </View>
 
-          {/* Description */}
+          {/* 7. Mô tả phòng */}
           {room.description && (
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>About this space</Text>
+              <Text style={styles.sectionTitle}>Mô tả phòng học</Text>
               <Text style={styles.descriptionText}>{room.description}</Text>
             </View>
           )}
 
-          {/* Equipment / Amenities */}
-          {room.equipment && room.equipment.length > 0 && (
+          {/* 8. Tiện ích phòng */}
+          {(room.amenities || room.equipment) && (
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Equipment & Amenities</Text>
+              <Text style={styles.sectionTitle}>Tiện ích & Trang thiết bị</Text>
               <View style={styles.amenitiesGrid}>
-                {room.equipment.map((item, index) => (
+                {(room.amenities || room.equipment || []).map((item, index) => (
                   <View key={index} style={styles.amenityItem}>
-                    <Ionicons name="checkmark-circle" size={16} color={colors.available} />
+                    <View style={styles.amenityCheckCircle}>
+                      <Ionicons name="checkmark" size={12} color={colors.white} />
+                    </View>
                     <Text style={styles.amenityText}>{item}</Text>
                   </View>
                 ))}
@@ -233,9 +224,13 @@ export const RoomDetailScreen: React.FC<BrowseStackScreenProps<'RoomDetail'>> = 
             </View>
           )}
 
-          {/* Date Selector */}
+          {/* 9. Khu vực chọn ngày */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Select Date</Text>
+            <View style={styles.sectionTitleRow}>
+              <Text style={styles.sectionTitle}>Chọn ngày học</Text>
+              <Text style={styles.selectedDateHint}>{formatDisplayDate(selectedDate)}</Text>
+            </View>
+
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -246,11 +241,14 @@ export const RoomDetailScreen: React.FC<BrowseStackScreenProps<'RoomDetail'>> = 
                 return (
                   <TouchableOpacity
                     key={item.isoDate}
-                    activeOpacity={0.7}
+                    activeOpacity={0.75}
                     style={[styles.dateCard, isSelected && styles.dateCardSelected]}
-                    onPress={() => setSelectedDate(item.isoDate)}
+                    onPress={() => {
+                      setSelectedDate(item.isoDate);
+                      setSelectedSlotId(null); // Reset slot khi đổi ngày
+                    }}
                     accessibilityRole="button"
-                    accessibilityLabel={`Date ${item.dayName} ${item.dayNumber}`}
+                    accessibilityLabel={`Ngày ${item.dayName}, ngày ${item.dayNumber}`}
                   >
                     <Text style={[styles.dayName, isSelected && styles.dayNameSelected]}>
                       {item.dayName}
@@ -258,30 +256,28 @@ export const RoomDetailScreen: React.FC<BrowseStackScreenProps<'RoomDetail'>> = 
                     <Text style={[styles.dayNumber, isSelected && styles.dayNumberSelected]}>
                       {item.dayNumber}
                     </Text>
+                    <Text style={[styles.dayMonth, isSelected && styles.dayMonthSelected]}>
+                      Th{item.monthNumber}
+                    </Text>
                   </TouchableOpacity>
                 );
               })}
             </ScrollView>
           </View>
 
-          {/* Time Slot Selector */}
+          {/* 10. Khu vực chọn khung giờ */}
           <View style={styles.section}>
-            <View style={styles.timeHeaderRow}>
-              <Text style={styles.sectionTitle}>Select Time Slot</Text>
-              <Text style={styles.slotSubtitle}>
-                {formatDisplayDate(selectedDate)}
-              </Text>
+            <View style={styles.sectionTitleRow}>
+              <Text style={styles.sectionTitle}>Chọn khung giờ</Text>
+              <View style={styles.liveIndicatorBadge}>
+                <View style={styles.liveDot} />
+                <Text style={styles.liveIndicatorText}>Trực tiếp</Text>
+              </View>
             </View>
 
             {STANDARD_TIME_SLOTS.map((slot) => {
               const isSelected = selectedSlotId === slot.id;
-              // Check real-time conflict / booked state from Zustand
-              const booked = isSlotBooked(
-                room.id,
-                selectedDate,
-                slot.startTime,
-                slot.endTime
-              );
+              const booked = isSlotBooked(room.id, selectedDate, slot.startTime, slot.endTime);
 
               return (
                 <TimeSlot
@@ -299,12 +295,12 @@ export const RoomDetailScreen: React.FC<BrowseStackScreenProps<'RoomDetail'>> = 
         </View>
       </ScrollView>
 
-      {/* Floating Bottom Booking Bar */}
+      {/* 11. Thanh nút Đặt phòng cố định phía dưới */}
       <View style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom, spacing.md) }]}>
         <View style={styles.summaryCol}>
-          <Text style={styles.summaryLabel}>Selected Slot</Text>
+          <Text style={styles.summaryLabel}>Khung giờ đã chọn</Text>
           <Text style={styles.summaryValue} numberOfLines={1}>
-            {selectedSlot ? selectedSlot.label : 'Choose a time slot'}
+            {selectedSlot ? selectedSlot.label : 'Chưa chọn khung giờ'}
           </Text>
         </View>
 
@@ -315,10 +311,11 @@ export const RoomDetailScreen: React.FC<BrowseStackScreenProps<'RoomDetail'>> = 
           ]}
           onPress={handleBookingSubmit}
           disabled={!selectedSlot || !selectedDate}
+          activeOpacity={0.8}
           accessibilityRole="button"
-          accessibilityLabel="Confirm Room Reservation"
+          accessibilityLabel="Xác nhận đặt phòng"
         >
-          <Text style={styles.bookButtonText}>Confirm Booking</Text>
+          <Text style={styles.bookButtonText}>Đặt phòng</Text>
           <Ionicons name="arrow-forward" size={18} color={colors.white} />
         </TouchableOpacity>
       </View>
@@ -338,7 +335,7 @@ const styles = StyleSheet.create({
     height: 270,
     width: '100%',
     position: 'relative',
-    backgroundColor: '#E2E8F0',
+    backgroundColor: colors.primaryLight,
   },
   heroImage: {
     width: '100%',
@@ -350,7 +347,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.92)',
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
     alignItems: 'center',
     justifyContent: 'center',
     ...shadows.md,
@@ -365,11 +362,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   typeBadge: {
-    backgroundColor: 'rgba(15, 23, 42, 0.8)',
+    backgroundColor: 'rgba(37, 33, 58, 0.85)',
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
+    paddingVertical: 4,
     borderRadius: borderRadius.sm,
     gap: 4,
   },
@@ -377,13 +374,12 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontSize: 12,
     fontWeight: '700',
-    textTransform: 'uppercase',
   },
   statusBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
+    paddingVertical: 4,
     borderRadius: borderRadius.full,
     borderWidth: 1,
     gap: 5,
@@ -408,7 +404,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.occupied,
   },
   statusText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
   },
   statusAvailableText: {
@@ -424,7 +420,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '800',
     color: colors.text,
-    marginBottom: spacing.sm,
+    marginBottom: spacing.xs,
   },
   metaRow: {
     flexDirection: 'row',
@@ -451,24 +447,64 @@ const styles = StyleSheet.create({
   section: {
     marginBottom: spacing.lg,
   },
+  sectionTitleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.sm,
+  },
   sectionTitle: {
     fontSize: 17,
-    fontWeight: '700',
+    fontWeight: '800',
     color: colors.text,
-    marginBottom: spacing.sm,
+  },
+  selectedDateHint: {
+    fontSize: 12,
+    color: colors.primary,
+    fontWeight: '700',
+  },
+  liveIndicatorBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: colors.primaryLight,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 3,
+    borderRadius: borderRadius.full,
+  },
+  liveDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.primary,
+  },
+  liveIndicatorText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.primary,
   },
   descriptionText: {
     fontSize: 14,
     lineHeight: 22,
-    color: colors.textSecondary,
+    color: colors.secondaryText,
+    marginTop: 4,
   },
   amenitiesGrid: {
     gap: spacing.sm,
+    marginTop: 4,
   },
   amenityItem: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
+  },
+  amenityCheckCircle: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: colors.available,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   amenityText: {
     fontSize: 14,
@@ -481,26 +517,32 @@ const styles = StyleSheet.create({
   },
   dateCard: {
     width: 68,
-    height: 72,
+    height: 76,
     borderRadius: borderRadius.md,
     borderWidth: 1.5,
     borderColor: colors.border,
     backgroundColor: colors.card,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingVertical: 4,
   },
   dateCardSelected: {
     backgroundColor: colors.primary,
     borderColor: colors.primary,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 4,
   },
   dayName: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: colors.textSecondary,
-    marginBottom: 4,
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.secondaryText,
+    marginBottom: 2,
   },
   dayNameSelected: {
-    color: colors.white,
+    color: colors.accent,
   },
   dayNumber: {
     fontSize: 18,
@@ -510,16 +552,13 @@ const styles = StyleSheet.create({
   dayNumberSelected: {
     color: colors.white,
   },
-  timeHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.sm,
-  },
-  slotSubtitle: {
-    fontSize: 13,
-    color: colors.primary,
+  dayMonth: {
+    fontSize: 10,
     fontWeight: '600',
+    color: colors.textMuted,
+  },
+  dayMonthSelected: {
+    color: colors.primaryLight,
   },
   bottomBar: {
     position: 'absolute',
@@ -542,12 +581,12 @@ const styles = StyleSheet.create({
   },
   summaryLabel: {
     fontSize: 12,
-    color: colors.textSecondary,
+    color: colors.secondaryText,
     fontWeight: '500',
   },
   summaryValue: {
-    fontSize: 14,
-    fontWeight: '700',
+    fontSize: 15,
+    fontWeight: '800',
     color: colors.text,
     marginTop: 2,
   },
@@ -555,18 +594,24 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.primary,
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: spacing.xl,
     paddingVertical: spacing.md,
     borderRadius: borderRadius.lg,
     gap: spacing.sm,
+    shadowColor: colors.primaryDark,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 4,
   },
   bookButtonDisabled: {
     backgroundColor: colors.cancelled,
-    opacity: 0.6,
+    opacity: 0.5,
+    elevation: 0,
   },
   bookButtonText: {
     color: colors.white,
-    fontWeight: '700',
+    fontWeight: '800',
     fontSize: 15,
   },
   centerContainer: {
@@ -578,12 +623,13 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: spacing.md,
-    color: colors.textSecondary,
+    color: colors.secondaryText,
     fontSize: 14,
+    fontWeight: '600',
   },
   errorTitle: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: '800',
     color: colors.text,
     marginTop: spacing.md,
     marginBottom: spacing.md,
@@ -596,6 +642,6 @@ const styles = StyleSheet.create({
   },
   backButtonText: {
     color: colors.white,
-    fontWeight: '600',
+    fontWeight: '700',
   },
 });

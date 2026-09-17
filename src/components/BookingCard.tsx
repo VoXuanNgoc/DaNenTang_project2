@@ -22,14 +22,21 @@ export const BookingCard: React.FC<BookingCardProps> = React.memo(({ booking, on
 
   const handleCancelPress = () => {
     Alert.alert(
-      'Cancel Booking',
-      `Are you sure you want to cancel your reservation for ${booking.roomName} on ${formatDisplayDate(booking.date)} (${booking.startTime} - ${booking.endTime})?`,
+      'Xác nhận hủy đặt phòng',
+      `Bạn có chắc chắn muốn hủy lịch đặt ${booking.roomName} vào ${formatDisplayDate(booking.date)} (${booking.startTime} - ${booking.endTime}) không?`,
       [
-        { text: 'Keep Booking', style: 'cancel' },
+        { text: 'Giữ lại', style: 'cancel' },
         {
-          text: 'Yes, Cancel',
+          text: 'Hủy lịch đặt',
           style: 'destructive',
-          onPress: () => onCancel(booking.id),
+          onPress: () => {
+            onCancel(booking.id);
+            Alert.alert(
+              'Hủy thành công',
+              `Lịch đặt phòng ${booking.roomName} đã được hủy. Khung giờ này hiện đã sẵn sàng cho sinh viên khác.`,
+              [{ text: 'Đóng' }]
+            );
+          },
         },
       ]
     );
@@ -40,9 +47,10 @@ export const BookingCard: React.FC<BookingCardProps> = React.memo(({ booking, on
       <View style={styles.header}>
         <View style={styles.roomInfo}>
           <Text style={styles.roomName}>{booking.roomName}</Text>
-          {booking.building && (
+          <View style={styles.buildingRow}>
+            <Ionicons name="business-outline" size={13} color={colors.secondaryText} />
             <Text style={styles.buildingText}>{booking.building}</Text>
-          )}
+          </View>
         </View>
 
         {/* Status Badge */}
@@ -63,8 +71,15 @@ export const BookingCard: React.FC<BookingCardProps> = React.memo(({ booking, on
               isConfirmed ? styles.confirmedText : styles.cancelledText,
             ]}
           >
-            {isConfirmed ? 'Confirmed' : 'Cancelled'}
+            {isConfirmed ? 'Đã xác nhận' : 'Đã hủy'}
           </Text>
+        </View>
+      </View>
+
+      <View style={styles.codeRow}>
+        <Text style={styles.codeLabel}>Mã đặt phòng:</Text>
+        <View style={styles.codeBadge}>
+          <Text style={styles.codeText}>{booking.bookingCode || booking.id.slice(0, 10)}</Text>
         </View>
       </View>
 
@@ -92,10 +107,10 @@ export const BookingCard: React.FC<BookingCardProps> = React.memo(({ booking, on
             style={styles.cancelButton}
             onPress={handleCancelPress}
             accessibilityRole="button"
-            accessibilityLabel={`Cancel booking for ${booking.roomName}`}
+            accessibilityLabel={`Hủy lịch đặt cho ${booking.roomName}`}
           >
-            <Ionicons name="trash-outline" size={15} color={colors.occupied} />
-            <Text style={styles.cancelButtonText}>Cancel Reservation</Text>
+            <Ionicons name="close-circle-outline" size={15} color={colors.occupied} />
+            <Text style={styles.cancelButtonText}>Hủy lịch đặt</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -128,10 +143,37 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.text,
   },
+  buildingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 3,
+  },
   buildingText: {
     fontSize: 13,
-    color: colors.textSecondary,
-    marginTop: 2,
+    color: colors.secondaryText,
+  },
+  codeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: spacing.xs,
+    gap: 6,
+  },
+  codeLabel: {
+    fontSize: 12,
+    color: colors.secondaryText,
+  },
+  codeBadge: {
+    backgroundColor: colors.primaryLight,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: borderRadius.xs,
+  },
+  codeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.primary,
+    letterSpacing: 0.5,
   },
   statusBadge: {
     flexDirection: 'row',
@@ -151,7 +193,7 @@ const styles = StyleSheet.create({
     borderColor: colors.cancelledBorder,
   },
   statusText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
   },
   confirmedText: {
@@ -169,6 +211,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
   },
   detailItem: {
     flexDirection: 'row',
@@ -177,7 +221,7 @@ const styles = StyleSheet.create({
   },
   detailText: {
     fontSize: 13,
-    fontWeight: '500',
+    fontWeight: '600',
     color: colors.text,
   },
   footer: {
@@ -193,12 +237,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
     paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.sm,
-    borderRadius: borderRadius.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.occupiedBg,
+    borderWidth: 1,
+    borderColor: colors.occupiedBorder,
   },
   cancelButtonText: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '700',
     color: colors.occupied,
   },
 });

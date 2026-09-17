@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import {
-  Image,
+  Alert,
   ScrollView,
   StyleSheet,
   Text,
@@ -10,7 +10,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { RootTabScreenProps } from '../navigation/types';
-import { useBookingStore } from '../store/bookingStore';
+import { useBookingStore, CURRENT_STUDENT } from '../store/bookingStore';
 import { colors } from '../theme/colors';
 import { borderRadius, shadows, spacing } from '../theme/spacing';
 
@@ -30,6 +30,10 @@ export const ProfileScreen: React.FC<RootTabScreenProps<'ProfileTab'>> = ({
   );
   const totalCount = bookings.length;
 
+  const handleMenuPress = (title: string, message: string) => {
+    Alert.alert(title, message, [{ text: 'Đóng' }]);
+  };
+
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <ScrollView
@@ -39,103 +43,173 @@ export const ProfileScreen: React.FC<RootTabScreenProps<'ProfileTab'>> = ({
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.titleRow}>
-            <Ionicons name="person" size={26} color={colors.primary} />
-            <Text style={styles.title}>Student Profile</Text>
+            <View style={styles.headerIconWrapper}>
+              <Ionicons name="person" size={24} color={colors.primary} />
+            </View>
+            <View>
+              <Text style={styles.title}>Hồ sơ sinh viên</Text>
+              <Text style={styles.subtitle}>Quản lý thông tin học tập & tài khoản phòng học</Text>
+            </View>
           </View>
         </View>
 
         {/* Profile Card */}
         <View style={styles.profileCard}>
           <View style={styles.avatarWrapper}>
-            <Image
-              source={{
-                uri: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
-              }}
-              style={styles.avatar}
-            />
-            <View style={styles.onlineBadge} />
+            <View style={styles.avatarCircle}>
+              <Text style={styles.avatarLetter}>{CURRENT_STUDENT.avatarLetter}</Text>
+            </View>
+            <View style={styles.verifiedBadge}>
+              <Ionicons name="checkmark" size={12} color={colors.white} />
+            </View>
           </View>
 
-          <Text style={styles.studentName}>Nguyen Van A</Text>
-          <Text style={styles.studentDepartment}>Department of Computer Science</Text>
+          <Text style={styles.studentName}>{CURRENT_STUDENT.name}</Text>
+          <Text style={styles.studentDepartment}>Khoa Công nghệ Thông tin</Text>
 
-          <View style={styles.idBadge}>
-            <Ionicons name="card-outline" size={14} color={colors.primary} />
-            <Text style={styles.idText}>Student ID: SV2024001</Text>
+          <View style={styles.badgesRow}>
+            <View style={styles.idBadge}>
+              <Ionicons name="card-outline" size={14} color={colors.primary} />
+              <Text style={styles.idText}>MSSV: {CURRENT_STUDENT.studentId}</Text>
+            </View>
+
+            <View style={styles.roleBadge}>
+              <Ionicons name="school-outline" size={14} color={colors.primaryDark} />
+              <Text style={styles.roleText}>{CURRENT_STUDENT.role}</Text>
+            </View>
           </View>
 
-          <View style={styles.infoRow}>
-            <Ionicons name="mail-outline" size={16} color={colors.textSecondary} />
-            <Text style={styles.infoValue}>nguyenvana@university.edu.vn</Text>
+          <View style={styles.emailContainer}>
+            <Ionicons name="mail-outline" size={15} color={colors.secondaryText} />
+            <Text style={styles.emailText}>{CURRENT_STUDENT.email}</Text>
           </View>
         </View>
 
-        {/* Booking Stats Grid */}
+        {/* Thống kê Bookings */}
         <View style={styles.statsContainer}>
           <View style={styles.statCard}>
-            <Text style={styles.statNumber}>{confirmedCount}</Text>
-            <Text style={styles.statLabel}>Active Bookings</Text>
+            <Text style={styles.statNumber}>{totalCount}</Text>
+            <Text style={styles.statLabel}>Tổng booking</Text>
             <View style={[styles.statDot, { backgroundColor: colors.primary }]} />
           </View>
 
           <View style={styles.statCard}>
-            <Text style={styles.statNumber}>{cancelledCount}</Text>
-            <Text style={styles.statLabel}>Cancelled</Text>
-            <View style={[styles.statDot, { backgroundColor: colors.cancelled }]} />
+            <Text style={[styles.statNumber, { color: colors.available }]}>{confirmedCount}</Text>
+            <Text style={styles.statLabel}>Sắp tới</Text>
+            <View style={[styles.statDot, { backgroundColor: colors.available }]} />
           </View>
 
           <View style={styles.statCard}>
-            <Text style={styles.statNumber}>{totalCount}</Text>
-            <Text style={styles.statLabel}>Total History</Text>
-            <View style={[styles.statDot, { backgroundColor: colors.available }]} />
+            <Text style={[styles.statNumber, { color: colors.occupied }]}>{cancelledCount}</Text>
+            <Text style={styles.statLabel}>Đã hủy</Text>
+            <View style={[styles.statDot, { backgroundColor: colors.occupied }]} />
           </View>
         </View>
 
-        {/* Quick Action */}
-        <TouchableOpacity
-          style={styles.quickActionCard}
-          onPress={() => navigation.navigate('MyBookingsTab')}
-          activeOpacity={0.7}
-        >
-          <View style={styles.quickActionLeft}>
-            <View style={styles.quickActionIcon}>
-              <Ionicons name="calendar" size={20} color={colors.primary} />
-            </View>
-            <View>
-              <Text style={styles.quickActionTitle}>View Active Bookings</Text>
-              <Text style={styles.quickActionSubtitle}>
-                {confirmedCount} confirmed {confirmedCount === 1 ? 'reservation' : 'reservations'} scheduled
-              </Text>
-            </View>
-          </View>
-          <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
-        </TouchableOpacity>
+        {/* Danh sách Menu */}
+        <View style={styles.menuSection}>
+          <Text style={styles.menuSectionTitle}>Tùy chọn tài khoản</Text>
 
-        {/* Campus Room Policies */}
+          <TouchableOpacity
+            style={styles.menuItem}
+            activeOpacity={0.7}
+            onPress={() =>
+              handleMenuPress(
+                'Thông tin cá nhân',
+                `Họ tên: ${CURRENT_STUDENT.name}\nMã sinh viên: ${CURRENT_STUDENT.studentId}\nEmail: ${CURRENT_STUDENT.email}\nKhoa: Công nghệ Thông tin\nTrạng thái tài khoản: Đang hoạt động`
+              )
+            }
+          >
+            <View style={styles.menuLeft}>
+              <View style={[styles.menuIconContainer, { backgroundColor: colors.primaryLight }]}>
+                <Ionicons name="person-outline" size={18} color={colors.primary} />
+              </View>
+              <Text style={styles.menuTitle}>Thông tin cá nhân</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.secondaryText} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.menuItem}
+            activeOpacity={0.7}
+            onPress={() => navigation.navigate('MyBookingsTab')}
+          >
+            <View style={styles.menuLeft}>
+              <View style={[styles.menuIconContainer, { backgroundColor: colors.primaryLight }]}>
+                <Ionicons name="calendar-outline" size={18} color={colors.primary} />
+              </View>
+              <Text style={styles.menuTitle}>Lịch đặt phòng</Text>
+            </View>
+            <View style={styles.menuRightBadge}>
+              <Text style={styles.menuRightBadgeText}>{confirmedCount} lịch</Text>
+              <Ionicons name="chevron-forward" size={18} color={colors.secondaryText} />
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.menuItem}
+            activeOpacity={0.7}
+            onPress={() =>
+              handleMenuPress(
+                'Trợ giúp & Hỗ trợ',
+                'Phòng Quản lý Giảng đường và Phòng Lab\nHotline: (028) 3835 4409\nEmail hỗ trợ: support.phonghoc@university.edu.vn\nThời gian làm việc: 07:30 - 17:00 từ Thứ 2 đến Thứ 6'
+              )
+            }
+          >
+            <View style={styles.menuLeft}>
+              <View style={[styles.menuIconContainer, { backgroundColor: colors.primaryLight }]}>
+                <Ionicons name="help-circle-outline" size={18} color={colors.primary} />
+              </View>
+              <Text style={styles.menuTitle}>Trợ giúp</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.secondaryText} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.menuItem}
+            activeOpacity={0.7}
+            onPress={() =>
+              handleMenuPress(
+                'Cài đặt ứng dụng',
+                'Phiên bản ứng dụng: 2.0.0 (Expo SDK 57)\nNgôn ngữ: Tiếng Việt\nThông báo phòng học: Đang bật\nTheme: Tím hiện đại (Modern University Study App)'
+              )
+            }
+          >
+            <View style={styles.menuLeft}>
+              <View style={[styles.menuIconContainer, { backgroundColor: colors.primaryLight }]}>
+                <Ionicons name="settings-outline" size={18} color={colors.primary} />
+              </View>
+              <Text style={styles.menuTitle}>Cài đặt</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.secondaryText} />
+          </TouchableOpacity>
+        </View>
+
+        {/* Nội quy phòng học */}
         <View style={styles.policyCard}>
           <View style={styles.policyHeader}>
-            <Ionicons name="shield-checkmark-outline" size={20} color={colors.primary} />
-            <Text style={styles.policyTitle}>Campus Study Room Rules</Text>
+            <Ionicons name="shield-checkmark" size={18} color={colors.primary} />
+            <Text style={styles.policyTitle}>Quy định sử dụng phòng học</Text>
           </View>
 
           <View style={styles.policyItem}>
-            <Ionicons name="checkmark-circle-outline" size={16} color={colors.available} />
+            <Ionicons name="checkmark-circle" size={15} color={colors.available} />
             <Text style={styles.policyText}>
-              Check-in within 15 minutes of your slot to maintain reservation.
+              Có mặt đúng giờ đăng ký và giữ trật tự chung trong khuôn viên học tập.
             </Text>
           </View>
 
           <View style={styles.policyItem}>
-            <Ionicons name="checkmark-circle-outline" size={16} color={colors.available} />
+            <Ionicons name="checkmark-circle" size={15} color={colors.available} />
             <Text style={styles.policyText}>
-              Keep noise levels appropriate for quiet zones and study halls.
+              Bảo quản trang thiết bị máy tính, máy chiếu và tắt điều hòa khi ra về.
             </Text>
           </View>
 
           <View style={styles.policyItem}>
-            <Ionicons name="checkmark-circle-outline" size={16} color={colors.available} />
+            <Ionicons name="checkmark-circle" size={15} color={colors.available} />
             <Text style={styles.policyText}>
-              Cancel in advance if your plans change so others can book the space.
+              Chủ động hủy lịch đặt nếu không sử dụng để nhường chỗ cho sinh viên khác.
             </Text>
           </View>
         </View>
@@ -154,7 +228,7 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: spacing.md,
-    paddingTop: spacing.sm,
+    paddingTop: spacing.md,
     paddingBottom: spacing.sm,
   },
   titleRow: {
@@ -162,15 +236,29 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.sm,
   },
+  headerIconWrapper: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: colors.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   title: {
-    fontSize: 26,
+    fontSize: 22,
     fontWeight: '800',
     color: colors.text,
-    letterSpacing: -0.5,
+    letterSpacing: -0.4,
+  },
+  subtitle: {
+    fontSize: 12,
+    color: colors.secondaryText,
+    marginTop: 2,
+    fontWeight: '500',
   },
   profileCard: {
     backgroundColor: colors.card,
-    borderRadius: borderRadius.lg,
+    borderRadius: borderRadius.xl,
     padding: spacing.lg,
     marginHorizontal: spacing.md,
     alignItems: 'center',
@@ -180,60 +268,97 @@ const styles = StyleSheet.create({
   },
   avatarWrapper: {
     position: 'relative',
-    marginBottom: spacing.md,
+    marginBottom: spacing.sm,
   },
-  avatar: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
+  avatarCircle: {
+    width: 86,
+    height: 86,
+    borderRadius: 43,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
     borderWidth: 3,
-    borderColor: colors.primarySubtle,
+    borderColor: colors.accent,
+    shadowColor: colors.primaryDark,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 4,
   },
-  onlineBadge: {
+  avatarLetter: {
+    fontSize: 36,
+    fontWeight: '800',
+    color: colors.white,
+  },
+  verifiedBadge: {
     position: 'absolute',
-    bottom: 2,
-    right: 4,
-    width: 16,
-    height: 16,
-    borderRadius: 8,
+    bottom: 0,
+    right: 2,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
     backgroundColor: colors.available,
     borderWidth: 2,
     borderColor: colors.white,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   studentName: {
     fontSize: 20,
     fontWeight: '800',
     color: colors.text,
-    marginBottom: 4,
+    marginBottom: 2,
   },
   studentDepartment: {
     fontSize: 13,
-    color: colors.textSecondary,
+    color: colors.secondaryText,
     marginBottom: spacing.md,
+    fontWeight: '500',
+  },
+  badgesRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.sm,
   },
   idBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.primarySubtle,
+    backgroundColor: colors.primaryLight,
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
+    paddingVertical: 5,
     borderRadius: borderRadius.full,
     gap: 6,
-    marginBottom: spacing.md,
   },
   idText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
     color: colors.primary,
   },
-  infoRow: {
+  roleBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    backgroundColor: colors.accentLight,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 5,
+    borderRadius: borderRadius.full,
+    gap: 6,
   },
-  infoValue: {
+  roleText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#8A6D0B',
+  },
+  emailContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 4,
+  },
+  emailText: {
     fontSize: 13,
-    color: colors.textSecondary,
+    color: colors.secondaryText,
+    fontWeight: '500',
   },
   statsContainer: {
     flexDirection: 'row',
@@ -244,7 +369,7 @@ const styles = StyleSheet.create({
   statCard: {
     flex: 1,
     backgroundColor: colors.card,
-    borderRadius: borderRadius.md,
+    borderRadius: borderRadius.lg,
     padding: spacing.md,
     alignItems: 'center',
     borderWidth: 1,
@@ -253,15 +378,15 @@ const styles = StyleSheet.create({
     ...shadows.sm,
   },
   statNumber: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: '800',
-    color: colors.text,
+    color: colors.primary,
   },
   statLabel: {
-    fontSize: 11,
-    color: colors.textSecondary,
+    fontSize: 12,
+    color: colors.secondaryText,
     fontWeight: '600',
-    marginTop: 4,
+    marginTop: 3,
     textAlign: 'center',
   },
   statDot: {
@@ -272,12 +397,9 @@ const styles = StyleSheet.create({
     height: 6,
     borderRadius: 3,
   },
-  quickActionCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+  menuSection: {
     backgroundColor: colors.card,
-    borderRadius: borderRadius.md,
+    borderRadius: borderRadius.xl,
     padding: spacing.md,
     marginHorizontal: spacing.md,
     marginTop: spacing.md,
@@ -285,32 +407,52 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     ...shadows.sm,
   },
-  quickActionLeft: {
+  menuSectionTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: colors.text,
+    marginBottom: spacing.xs,
+    paddingHorizontal: spacing.xs,
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.xs,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.divider,
+  },
+  menuLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
   },
-  quickActionIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.primarySubtle,
+  menuIconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  quickActionTitle: {
-    fontSize: 15,
+  menuTitle: {
+    fontSize: 14,
     fontWeight: '700',
     color: colors.text,
   },
-  quickActionSubtitle: {
+  menuRightBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  menuRightBadgeText: {
     fontSize: 12,
-    color: colors.textSecondary,
-    marginTop: 2,
+    fontWeight: '600',
+    color: colors.primary,
   },
   policyCard: {
     backgroundColor: colors.card,
-    borderRadius: borderRadius.lg,
+    borderRadius: borderRadius.xl,
     padding: spacing.md,
     marginHorizontal: spacing.md,
     marginTop: spacing.md,
@@ -325,8 +467,8 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   policyTitle: {
-    fontSize: 15,
-    fontWeight: '700',
+    fontSize: 14,
+    fontWeight: '800',
     color: colors.text,
   },
   policyItem: {
@@ -337,8 +479,8 @@ const styles = StyleSheet.create({
   },
   policyText: {
     flex: 1,
-    fontSize: 13,
-    color: colors.textSecondary,
+    fontSize: 12,
+    color: colors.secondaryText,
     lineHeight: 18,
   },
 });

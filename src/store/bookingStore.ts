@@ -1,11 +1,10 @@
 import { create } from 'zustand';
 import { Booking, BookingInput } from '../types/booking';
 import { initialMockBookings } from '../data/mockBookings';
-import { checkBookingConflict } from '../utils/bookingUtils';
+import { checkBookingConflict, isPastDate } from '../utils/bookingUtils';
 
 export interface BookingState {
   bookings: Booking[];
-  // Filters for Browse screen
   searchQuery: string;
   selectedFilters: string[];
 
@@ -22,25 +21,33 @@ export interface BookingState {
   };
   cancelBooking: (bookingId: string) => void;
 
-  // Selectors / Helpers
+  // Selectors
   isSlotBooked: (roomId: string, date: string, startTime: string, endTime: string) => boolean;
   getConfirmedBookingsCount: () => number;
 }
 
+export const CURRENT_STUDENT = {
+  name: 'Võ Xuân Ngọc',
+  studentId: '23IT180',
+  email: 'voxuanngoc@example.com',
+  role: 'Sinh viên',
+  avatarLetter: 'N',
+};
+
 export const useBookingStore = create<BookingState>((set, get) => ({
   bookings: initialMockBookings,
   searchQuery: '',
-  selectedFilters: ['All'],
+  selectedFilters: ['Tất cả'],
 
   setSearchQuery: (query: string) => set({ searchQuery: query }),
 
   toggleFilter: (filter: string) => {
     set((state) => {
-      if (filter === 'All') {
-        return { selectedFilters: ['All'] };
+      if (filter === 'Tất cả') {
+        return { selectedFilters: ['Tất cả'] };
       }
 
-      let newFilters = state.selectedFilters.filter((f) => f !== 'All');
+      let newFilters = state.selectedFilters.filter((f) => f !== 'Tất cả');
       if (newFilters.includes(filter)) {
         newFilters = newFilters.filter((f) => f !== filter);
       } else {
@@ -48,19 +55,43 @@ export const useBookingStore = create<BookingState>((set, get) => ({
       }
 
       if (newFilters.length === 0) {
-        newFilters = ['All'];
+        newFilters = ['Tất cả'];
       }
 
       return { selectedFilters: newFilters };
     });
   },
 
-  resetFilters: () => set({ searchQuery: '', selectedFilters: ['All'] }),
+  resetFilters: () => set({ searchQuery: '', selectedFilters: ['Tất cả'] }),
 
   addBooking: (input: BookingInput) => {
+    // 1. Kiểm tra ngày
+    if (!input.date || input.date.trim() === '') {
+      return {
+        success: false,
+        message: 'Vui lòng chọn ngày đặt phòng.',
+      };
+    }
+
+    // 2. Kiểm tra khung giờ
+    if (!input.startTime || !input.endTime) {
+      return {
+        success: false,
+        message: 'Vui lòng chọn khung giờ.',
+      };
+    }
+
+    // 3. Kiểm tra ngày trong quá khứ
+    if (isPastDate(input.date)) {
+      return {
+        success: false,
+        message: 'Không thể đặt phòng cho ngày trong quá khứ.',
+      };
+    }
+
     const { bookings } = get();
 
-    // Conflict prevention check
+    // 4. Kiểm tra xung đột thời gian (Conflict prevention)
     const conflictResult = checkBookingConflict(
       bookings,
       input.roomId,
@@ -72,22 +103,27 @@ export const useBookingStore = create<BookingState>((set, get) => ({
     if (conflictResult.hasConflict) {
       return {
         success: false,
-        message: 'This time slot is already booked. Please choose another time.',
+        message: conflictResult.message || 'Khung giờ này đã được đặt. Vui lòng chọn khung giờ khác.',
       };
     }
 
+    // Tạo mã booking ngẫu nhiên đẹp dạng BK-2026-XXXX
+    const randomCodeNum = Math.floor(1000 + Math.random() * 9000);
+    const bookingCode = `BK-2026-${randomCodeNum}`;
+
     const newBooking: Booking = {
       id: `booking-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      bookingCode,
       roomId: input.roomId,
       roomName: input.roomName,
-      building: input.building,
+      building: input.building || 'Khu giảng đường',
       date: input.date,
       startTime: input.startTime,
       endTime: input.endTime,
       status: 'confirmed',
       createdAt: new Date().toISOString(),
-      studentName: input.studentName || 'Nguyen Van A',
-      studentId: input.studentId || 'SV2024001',
+      studentName: CURRENT_STUDENT.name,
+      studentId: CURRENT_STUDENT.studentId,
     };
 
     set((state) => ({
@@ -96,7 +132,7 @@ export const useBookingStore = create<BookingState>((set, get) => ({
 
     return {
       success: true,
-      message: 'Booking confirmed successfully!',
+      message: 'Đặt phòng thành công! 🎉',
       booking: newBooking,
     };
   },

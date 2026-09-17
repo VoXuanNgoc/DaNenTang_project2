@@ -3,6 +3,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { BrowseStackParamList } from './types';
 import { BrowseRoomsScreen } from '../screens/BrowseRoomsScreen';
 import { RoomDetailScreen } from '../screens/RoomDetailScreen';
+import { BookingConfirmationScreen } from '../screens/BookingConfirmationScreen';
 
 const Stack = createNativeStackNavigator<BrowseStackParamList>();
 
@@ -17,6 +18,7 @@ export const BrowseStackNavigator: React.FC = () => {
     >
       <Stack.Screen name="BrowseRooms" component={BrowseRoomsScreen} />
       <Stack.Screen name="RoomDetail" component={RoomDetailScreen} />
+      <Stack.Screen name="BookingConfirmation" component={BookingConfirmationScreen} />
     </Stack.Navigator>
   );
 };

@@ -22,7 +22,7 @@ export const MainTabNavigator: React.FC = () => {
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.textMuted,
+        tabBarInactiveTintColor: colors.secondaryText,
         tabBarStyle: styles.tabBar,
         tabBarLabelStyle: styles.tabBarLabel,
       }}
@@ -31,7 +31,7 @@ export const MainTabNavigator: React.FC = () => {
         name="BrowseTab"
         component={BrowseStackNavigator}
         options={{
-          tabBarLabel: 'Browse Rooms',
+          tabBarLabel: 'Phòng học',
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons
               name={focused ? 'grid' : 'grid-outline'}
@@ -46,7 +46,7 @@ export const MainTabNavigator: React.FC = () => {
         name="MyBookingsTab"
         component={MyBookingsScreen}
         options={{
-          tabBarLabel: 'My Bookings',
+          tabBarLabel: 'Lịch đặt',
           tabBarBadge: confirmedCount > 0 ? confirmedCount : undefined,
           tabBarBadgeStyle: styles.badgeStyle,
           tabBarIcon: ({ color, size, focused }) => (
@@ -63,7 +63,7 @@ export const MainTabNavigator: React.FC = () => {
         name="ProfileTab"
         component={ProfileScreen}
         options={{
-          tabBarLabel: 'Profile',
+          tabBarLabel: 'Cá nhân',
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons
               name={focused ? 'person' : 'person-outline'}
@@ -79,16 +79,21 @@ export const MainTabNavigator: React.FC = () => {
 
 const styles = StyleSheet.create({
   tabBar: {
-    backgroundColor: colors.card,
+    backgroundColor: colors.white,
     borderTopWidth: 1,
     borderTopColor: colors.border,
     height: Platform.OS === 'ios' ? 88 : 64,
     paddingBottom: Platform.OS === 'ios' ? 28 : 10,
     paddingTop: 8,
+    elevation: 8,
+    shadowColor: colors.primaryDark,
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
   },
   tabBarLabel: {
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '700',
   },
   badgeStyle: {
     backgroundColor: colors.primary,

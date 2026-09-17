@@ -12,6 +12,7 @@ import { RootTabScreenProps } from '../navigation/types';
 import { useBookingStore } from '../store/bookingStore';
 import { Booking } from '../types/booking';
 import { BookingCard } from '../components/BookingCard';
+import { EmptyState } from '../components/EmptyState';
 import { colors } from '../theme/colors';
 import { borderRadius, spacing } from '../theme/spacing';
 
@@ -59,12 +60,16 @@ export const MyBookingsScreen: React.FC<RootTabScreenProps<'MyBookingsTab'>> = (
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.titleRow}>
-          <Ionicons name="calendar" size={26} color={colors.primary} />
-          <Text style={styles.title}>My Bookings</Text>
+          <View style={styles.headerIconWrapper}>
+            <Ionicons name="calendar" size={24} color={colors.primary} />
+          </View>
+          <View>
+            <Text style={styles.title}>Lịch đặt phòng của tôi</Text>
+            <Text style={styles.subtitle}>
+              Tổng cộng {bookings.length} lượt đặt phòng ({confirmedCount} đang hiệu lực)
+            </Text>
+          </View>
         </View>
-        <Text style={styles.subtitle}>
-          Manage your room reservations and track booking history
-        </Text>
       </View>
 
       {/* Segmented Filter Tabs */}
@@ -76,7 +81,7 @@ export const MyBookingsScreen: React.FC<RootTabScreenProps<'MyBookingsTab'>> = (
           accessibilityState={{ selected: activeTab === 'all' }}
         >
           <Text style={[styles.tabText, activeTab === 'all' && styles.tabTextActive]}>
-            All ({bookings.length})
+            Tất cả ({bookings.length})
           </Text>
         </TouchableOpacity>
 
@@ -89,7 +94,7 @@ export const MyBookingsScreen: React.FC<RootTabScreenProps<'MyBookingsTab'>> = (
           <Text
             style={[styles.tabText, activeTab === 'confirmed' && styles.tabTextActive]}
           >
-            Confirmed ({confirmedCount})
+            Sắp tới ({confirmedCount})
           </Text>
         </TouchableOpacity>
 
@@ -102,42 +107,29 @@ export const MyBookingsScreen: React.FC<RootTabScreenProps<'MyBookingsTab'>> = (
           <Text
             style={[styles.tabText, activeTab === 'cancelled' && styles.tabTextActive]}
           >
-            Cancelled ({cancelledCount})
+            Đã hủy ({cancelledCount})
           </Text>
         </TouchableOpacity>
       </View>
 
-      {/* Bookings List */}
+      {/* Danh sách Bookings */}
       <FlatList
         data={filteredBookings}
         renderItem={renderBookingItem}
         keyExtractor={keyExtractor}
         contentContainerStyle={styles.listContent}
-        initialNumToRender={5}
-        maxToRenderPerBatch={6}
+        initialNumToRender={6}
+        maxToRenderPerBatch={8}
         windowSize={5}
         ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <View style={styles.emptyIconCircle}>
-              <Ionicons name="calendar-outline" size={40} color={colors.primary} />
-            </View>
-            <Text style={styles.emptyTitle}>You don't have any bookings yet.</Text>
-            <Text style={styles.emptySubtitle}>
-              {activeTab === 'all'
-                ? 'Reserve a study room or computer lab to get started.'
-                : activeTab === 'confirmed'
-                ? 'No active confirmed reservations right now.'
-                : 'No cancelled bookings in your history.'}
-            </Text>
-            <TouchableOpacity
-              style={styles.browseButton}
-              onPress={() => navigation.navigate('BrowseTab', { screen: 'BrowseRooms' })}
-              accessibilityRole="button"
-            >
-              <Ionicons name="search" size={16} color={colors.white} />
-              <Text style={styles.browseButtonText}>Browse Study Rooms</Text>
-            </TouchableOpacity>
-          </View>
+          <EmptyState
+            iconName="calendar-outline"
+            title="Bạn chưa có lịch đặt phòng nào."
+            description="Hãy tìm một phòng phù hợp để bắt đầu học tập và ôn luyện đồ án."
+            buttonText="Khám phá phòng học"
+            buttonIcon="search"
+            onButtonPress={() => navigation.navigate('BrowseTab', { screen: 'BrowseRooms' })}
+          />
         }
       />
     </View>
@@ -151,7 +143,7 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: spacing.md,
-    paddingTop: spacing.sm,
+    paddingTop: spacing.md,
     paddingBottom: spacing.sm,
   },
   titleRow: {
@@ -159,16 +151,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.sm,
   },
+  headerIconWrapper: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: colors.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   title: {
-    fontSize: 26,
+    fontSize: 22,
     fontWeight: '800',
     color: colors.text,
-    letterSpacing: -0.5,
+    letterSpacing: -0.4,
   },
   subtitle: {
-    fontSize: 13,
-    color: colors.textSecondary,
-    marginTop: 4,
+    fontSize: 12,
+    color: colors.secondaryText,
+    marginTop: 2,
+    fontWeight: '500',
   },
   tabBar: {
     flexDirection: 'row',
@@ -182,67 +183,30 @@ const styles = StyleSheet.create({
   },
   tabButton: {
     flex: 1,
-    paddingVertical: spacing.sm,
+    paddingVertical: 9,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: borderRadius.sm,
   },
   tabButtonActive: {
     backgroundColor: colors.primary,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 2,
   },
   tabText: {
     fontSize: 13,
     fontWeight: '600',
-    color: colors.textSecondary,
+    color: colors.secondaryText,
   },
   tabTextActive: {
     color: colors.white,
+    fontWeight: '700',
   },
   listContent: {
     paddingTop: spacing.sm,
     paddingBottom: spacing.xxl,
-  },
-  emptyContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: spacing.xl,
-    paddingVertical: 60,
-  },
-  emptyIconCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: colors.primarySubtle,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.md,
-  },
-  emptyTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.text,
-    marginBottom: spacing.xs,
-    textAlign: 'center',
-  },
-  emptySubtitle: {
-    fontSize: 13,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    marginBottom: spacing.lg,
-    lineHeight: 18,
-  },
-  browseButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.primary,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    borderRadius: borderRadius.full,
-    gap: 8,
-  },
-  browseButtonText: {
-    color: colors.white,
-    fontWeight: '700',
-    fontSize: 14,
   },
 });

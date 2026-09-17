@@ -1,10 +1,12 @@
 import { NavigatorScreenParams } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
+import { Booking } from '../types/booking';
 
 export type BrowseStackParamList = {
   BrowseRooms: undefined;
   RoomDetail: { roomId: string };
+  BookingConfirmation: { booking: Booking };
 };
 
 export type RootTabParamList = {

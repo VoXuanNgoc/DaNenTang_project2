@@ -3,6 +3,7 @@ import {
   timeToMinutes,
   doTimeIntervalsOverlap,
   checkBookingConflict,
+  isPastDate,
 } from '../bookingUtils';
 import { Booking } from '../../types/booking';
 
@@ -66,30 +67,45 @@ describe('Booking Conflict Prevention Engine', () => {
     const existingBookings: Booking[] = [
       {
         id: 'booking-1',
+        bookingCode: 'BK-2026-001',
         roomId: 'room-001',
         roomName: 'Lab A3-101',
+        building: 'Tòa A3',
         date: '2026-09-17',
         startTime: '10:00',
         endTime: '11:00',
         status: 'confirmed',
+        createdAt: new Date().toISOString(),
+        studentName: 'Võ Xuân Ngọc',
+        studentId: '23IT180',
       },
       {
         id: 'booking-2',
+        bookingCode: 'BK-2026-002',
         roomId: 'room-001',
         roomName: 'Lab A3-101',
+        building: 'Tòa A3',
         date: '2026-09-17',
         startTime: '14:00',
         endTime: '15:00',
-        status: 'cancelled', // Cancelled booking should NOT block
+        status: 'cancelled',
+        createdAt: new Date().toISOString(),
+        studentName: 'Võ Xuân Ngọc',
+        studentId: '23IT180',
       },
       {
         id: 'booking-3',
+        bookingCode: 'BK-2026-003',
         roomId: 'room-002',
         roomName: 'Library Zone B',
+        building: 'Thư viện chính',
         date: '2026-09-17',
         startTime: '10:00',
         endTime: '11:00',
         status: 'confirmed',
+        createdAt: new Date().toISOString(),
+        studentName: 'Võ Xuân Ngọc',
+        studentId: '23IT180',
       },
     ];
 
@@ -97,7 +113,7 @@ describe('Booking Conflict Prevention Engine', () => {
       const result = checkBookingConflict(existingBookings, 'room-001', '2026-09-17', '09:30', '10:30');
       expect(result.hasConflict).toBe(true);
       expect(result.conflictingBooking?.id).toBe('booking-1');
-      expect(result.message).toContain('already booked');
+      expect(result.message).toBe('Khung giờ này đã được đặt. Vui lòng chọn khung giờ khác.');
     });
 
     it('rejects exact time slot for same room and date (10:00 - 11:00)', () => {
@@ -136,6 +152,17 @@ describe('Booking Conflict Prevention Engine', () => {
     it('accepts same time slot for a DIFFERENT room', () => {
       const result = checkBookingConflict(existingBookings, 'room-003', '2026-09-17', '10:00', '11:00');
       expect(result.hasConflict).toBe(false);
+    });
+  });
+
+  describe('isPastDate', () => {
+    it('correctly flags past dates', () => {
+      expect(isPastDate('2020-01-01')).toBe(true);
+    });
+
+    it('accepts today or future dates', () => {
+      const futureYear = new Date().getFullYear() + 2;
+      expect(isPastDate(`${futureYear}-01-01`)).toBe(false);
     });
   });
 });

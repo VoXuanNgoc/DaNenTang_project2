@@ -14,18 +14,93 @@ import { borderRadius, shadows, spacing } from '../theme/spacing';
 interface RoomCardProps {
   room: Room;
   onPress: () => void;
+  horizontal?: boolean;
 }
 
-export const RoomCard: React.FC<RoomCardProps> = React.memo(({ room, onPress }) => {
+export const RoomCard: React.FC<RoomCardProps> = React.memo(({
+  room,
+  onPress,
+  horizontal = false,
+}) => {
   const isAvailable = room.status === 'available';
+
+  if (horizontal) {
+    return (
+      <TouchableOpacity
+        activeOpacity={0.85}
+        style={styles.horizontalCard}
+        onPress={onPress}
+        accessibilityRole="button"
+        accessibilityLabel={`${room.name}, ${room.type}, ${room.building}, sức chứa ${room.capacity} chỗ, ${isAvailable ? 'Còn trống' : 'Đang được sử dụng'}`}
+      >
+        <View style={styles.horizontalImageContainer}>
+          <Image
+            source={{ uri: room.image }}
+            style={styles.image}
+            resizeMode="cover"
+          />
+          <View style={styles.typeBadge}>
+            <Ionicons
+              name={room.type.includes('Lab') ? 'laptop-outline' : 'book-outline'}
+              size={11}
+              color={colors.white}
+            />
+            <Text style={styles.typeText}>{room.type}</Text>
+          </View>
+        </View>
+
+        <View style={styles.horizontalContent}>
+          <View
+            style={[
+              styles.statusBadge,
+              isAvailable ? styles.statusAvailableBg : styles.statusOccupiedBg,
+              styles.statusBadgeSmall,
+            ]}
+          >
+            <View
+              style={[
+                styles.statusDot,
+                isAvailable ? styles.dotAvailable : styles.dotOccupied,
+              ]}
+            />
+            <Text
+              style={[
+                styles.statusText,
+                isAvailable ? styles.statusAvailableText : styles.statusOccupiedText,
+              ]}
+            >
+              {isAvailable ? 'Còn trống' : 'Đang được sử dụng'}
+            </Text>
+          </View>
+
+          <Text style={styles.horizontalRoomName} numberOfLines={1}>
+            {room.name}
+          </Text>
+
+          <View style={styles.horizontalMeta}>
+            <View style={styles.metaItem}>
+              <Ionicons name="business-outline" size={13} color={colors.secondaryText} />
+              <Text style={styles.metaText} numberOfLines={1}>
+                {room.building}
+              </Text>
+            </View>
+            <View style={styles.metaItem}>
+              <Ionicons name="people-outline" size={13} color={colors.secondaryText} />
+              <Text style={styles.metaText}>{room.capacity} chỗ</Text>
+            </View>
+          </View>
+        </View>
+      </TouchableOpacity>
+    );
+  }
 
   return (
     <TouchableOpacity
-      activeOpacity={0.85}
+      activeOpacity={0.88}
       style={styles.card}
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={`${room.name}, ${room.type}, located in ${room.building}, capacity ${room.capacity}, currently ${room.status}`}
+      accessibilityLabel={`${room.name}, ${room.type}, ${room.building}, sức chứa ${room.capacity} chỗ, ${isAvailable ? 'Còn trống' : 'Đang được sử dụng'}`}
     >
       <View style={styles.imageContainer}>
         <Image
@@ -33,17 +108,18 @@ export const RoomCard: React.FC<RoomCardProps> = React.memo(({ room, onPress }) 
           style={styles.image}
           resizeMode="cover"
         />
-        {/* Room Type Overlay Badge */}
+
+        {/* Room Type Badge */}
         <View style={styles.typeBadge}>
           <Ionicons
-            name={room.type === 'Lab' ? 'laptop-outline' : 'book-outline'}
+            name={room.type.includes('Lab') ? 'laptop-outline' : 'book-outline'}
             size={12}
             color={colors.white}
           />
           <Text style={styles.typeText}>{room.type}</Text>
         </View>
 
-        {/* Status Indicator Badge */}
+        {/* Status Badge */}
         <View
           style={[
             styles.statusBadge,
@@ -62,7 +138,7 @@ export const RoomCard: React.FC<RoomCardProps> = React.memo(({ room, onPress }) 
               isAvailable ? styles.statusAvailableText : styles.statusOccupiedText,
             ]}
           >
-            {isAvailable ? 'Available' : 'Occupied'}
+            {isAvailable ? 'Còn trống' : 'Đang được sử dụng'}
           </Text>
         </View>
       </View>
@@ -72,23 +148,30 @@ export const RoomCard: React.FC<RoomCardProps> = React.memo(({ room, onPress }) 
           <Text style={styles.roomName} numberOfLines={1}>
             {room.name}
           </Text>
-          <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+          <View style={styles.chevronWrapper}>
+            <Ionicons name="chevron-forward" size={16} color={colors.primary} />
+          </View>
         </View>
 
         <View style={styles.metaRow}>
-          {/* Building */}
           <View style={styles.metaItem}>
-            <Ionicons name="business-outline" size={14} color={colors.textSecondary} />
+            <Ionicons name="business-outline" size={14} color={colors.primary} />
             <Text style={styles.metaText} numberOfLines={1}>
               {room.building}
             </Text>
           </View>
 
-          {/* Capacity */}
           <View style={styles.metaItem}>
-            <Ionicons name="people-outline" size={14} color={colors.textSecondary} />
-            <Text style={styles.metaText}>{room.capacity} seats</Text>
+            <Ionicons name="people-outline" size={14} color={colors.secondaryText} />
+            <Text style={styles.metaText}>{room.capacity} chỗ ngồi</Text>
           </View>
+
+          {room.floor && (
+            <View style={styles.metaItem}>
+              <Ionicons name="layers-outline" size={14} color={colors.secondaryText} />
+              <Text style={styles.metaText}>{room.floor}</Text>
+            </View>
+          )}
         </View>
       </View>
     </TouchableOpacity>
@@ -104,12 +187,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     overflow: 'hidden',
-    ...shadows.md,
+    ...shadows.sm,
   },
   imageContainer: {
     height: 160,
     width: '100%',
-    backgroundColor: '#E2E8F0',
+    backgroundColor: colors.primaryLight,
     position: 'relative',
   },
   image: {
@@ -120,11 +203,11 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: spacing.sm,
     left: spacing.sm,
-    backgroundColor: 'rgba(15, 23, 42, 0.75)',
+    backgroundColor: 'rgba(37, 33, 58, 0.8)',
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
+    paddingVertical: 3,
     borderRadius: borderRadius.sm,
     gap: 4,
   },
@@ -132,8 +215,7 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontSize: 11,
     fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 0.3,
   },
   statusBadge: {
     position: 'absolute',
@@ -142,10 +224,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
+    paddingVertical: 3,
     borderRadius: borderRadius.full,
     borderWidth: 1,
     gap: 5,
+  },
+  statusBadgeSmall: {
+    position: 'relative',
+    top: 0,
+    right: 0,
+    alignSelf: 'flex-start',
+    marginBottom: 6,
   },
   statusAvailableBg: {
     backgroundColor: colors.availableBg,
@@ -167,7 +256,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.occupied,
   },
   statusText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
   },
   statusAvailableText: {
@@ -191,11 +280,20 @@ const styles = StyleSheet.create({
     color: colors.text,
     flex: 1,
   },
+  chevronWrapper: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: colors.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    marginTop: spacing.xs,
+    marginTop: 4,
+    flexWrap: 'wrap',
   },
   metaItem: {
     flexDirection: 'row',
@@ -204,7 +302,39 @@ const styles = StyleSheet.create({
   },
   metaText: {
     fontSize: 13,
-    color: colors.textSecondary,
+    color: colors.secondaryText,
     fontWeight: '500',
+  },
+
+  // Horizontal card variant for Featured Section
+  horizontalCard: {
+    width: 250,
+    backgroundColor: colors.card,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    marginRight: spacing.md,
+    overflow: 'hidden',
+    ...shadows.sm,
+  },
+  horizontalImageContainer: {
+    height: 120,
+    width: '100%',
+    position: 'relative',
+    backgroundColor: colors.primaryLight,
+  },
+  horizontalContent: {
+    padding: spacing.md,
+  },
+  horizontalRoomName: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: 6,
+  },
+  horizontalMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
 });

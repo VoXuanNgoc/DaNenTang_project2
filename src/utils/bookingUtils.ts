@@ -1,25 +1,25 @@
 import { Booking } from '../types/booking';
 
 /**
- * Converts a time string in format "HH:mm" to total minutes from midnight.
- * e.g., "09:30" -> 570
+ * Chuyển đổi định dạng "HH:mm" thành tổng số phút tính từ 00:00.
  */
 export const timeToMinutes = (timeStr: string): number => {
   const parts = timeStr.trim().split(':');
   if (parts.length !== 2) {
-    throw new Error(`Invalid time format: "${timeStr}". Expected "HH:mm".`);
+    throw new Error(`Định dạng giờ không hợp lệ: "${timeStr}". Yêu cầu định dạng "HH:mm".`);
   }
   const hours = parseInt(parts[0], 10);
   const minutes = parseInt(parts[1], 10);
   if (isNaN(hours) || isNaN(minutes) || hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
-    throw new Error(`Invalid time values in "${timeStr}".`);
+    throw new Error(`Giá trị giờ phút không hợp lệ trong "${timeStr}".`);
   }
   return hours * 60 + minutes;
 };
 
 /**
- * Checks if two time intervals [startA, endA) and [startB, endB) overlap.
- * Intervals sharing only an exact boundary (e.g. 09:00-10:00 and 10:00-11:00) do NOT overlap.
+ * Kiểm tra xem 2 khoảng thời gian [startA, endA) và [startB, endB) có bị chồng lấn (overlap) hay không.
+ * Điều kiện trùng lịch: startA < endB && startB < endA
+ * Các khoảng chạm ranh giới (ví dụ 09:00 - 10:00 và 10:00 - 11:00) KHÔNG bị tính là trùng.
  */
 export const doTimeIntervalsOverlap = (
   startA: string,
@@ -33,7 +33,7 @@ export const doTimeIntervalsOverlap = (
   const eB = timeToMinutes(endB);
 
   if (sA >= eA || sB >= eB) {
-    throw new Error('Start time must be strictly before end time.');
+    throw new Error('Thời gian bắt đầu phải trước thời gian kết thúc.');
   }
 
   return sA < eB && sB < eA;
@@ -46,8 +46,23 @@ export interface ConflictCheckResult {
 }
 
 /**
- * Checks whether a requested booking conflicts with any existing confirmed bookings.
- * Cancelled bookings are ignored and do NOT block time slots.
+ * Kiểm tra xem ngày có phải là ngày trong quá khứ hay không.
+ */
+export const isPastDate = (dateStr: string): boolean => {
+  const [year, month, day] = dateStr.split('-').map((v) => parseInt(v, 10));
+  const targetDate = new Date(year, month - 1, day);
+  targetDate.setHours(0, 0, 0, 0);
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  return targetDate.getTime() < today.getTime();
+};
+
+/**
+ * Kiểm tra xung đột lịch đặt phòng.
+ * Chỉ các booking "confirmed" mới gây xung đột.
+ * Booking "cancelled" không bao giờ chặn khung giờ.
  */
 export const checkBookingConflict = (
   existingBookings: Booking[],
@@ -59,24 +74,22 @@ export const checkBookingConflict = (
 ): ConflictCheckResult => {
   const normalizedDate = date.trim();
 
-  // Find any confirmed booking for the same room on the same date with overlapping time
   const conflictingBooking = existingBookings.find((booking) => {
-    // Exclude if it's the same booking being edited/checked
     if (excludeBookingId && booking.id === excludeBookingId) {
       return false;
     }
 
-    // Cancelled bookings never block time slots
+    // Chỉ kiểm tra booking có trạng thái confirmed
     if (booking.status !== 'confirmed') {
       return false;
     }
 
-    // Must match room and date
+    // Cùng phòng và cùng ngày
     if (booking.roomId !== roomId || booking.date !== normalizedDate) {
       return false;
     }
 
-    // Check time overlap
+    // Kiểm tra overlap thời gian
     return doTimeIntervalsOverlap(booking.startTime, booking.endTime, startTime, endTime);
   });
 
@@ -84,7 +97,7 @@ export const checkBookingConflict = (
     return {
       hasConflict: true,
       conflictingBooking,
-      message: `This time slot is already booked. Please choose another time. (Conflict with booking ${conflictingBooking.startTime} - ${conflictingBooking.endTime})`,
+      message: 'Khung giờ này đã được đặt. Vui lòng chọn khung giờ khác.',
     };
   }
 
@@ -94,8 +107,7 @@ export const checkBookingConflict = (
 };
 
 /**
- * Formats date string YYYY-MM-DD to a user-friendly display date.
- * e.g. "2026-09-17" -> "Thu, Sep 17, 2026"
+ * Định dạng ngày YYYY-MM-DD sang tiếng Việt thân thiện (ví dụ: "Thứ Năm, 17/09/2026")
  */
 export const formatDisplayDate = (dateStr: string): string => {
   try {
@@ -105,12 +117,12 @@ export const formatDisplayDate = (dateStr: string): string => {
       const month = parseInt(parts[1], 10) - 1;
       const day = parseInt(parts[2], 10);
       const date = new Date(year, month, day);
-      return date.toLocaleDateString('en-US', {
-        weekday: 'short',
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-      });
+      
+      const dayOfWeekNames = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
+      const dayName = dayOfWeekNames[date.getDay()];
+      const pad = (n: number) => String(n).padStart(2, '0');
+      
+      return `${dayName}, ${pad(day)}/${pad(month + 1)}/${year}`;
     }
   } catch {
     // fallback
@@ -119,7 +131,7 @@ export const formatDisplayDate = (dateStr: string): string => {
 };
 
 /**
- * Standard university slot schedule
+ * Danh sách 8 khung giờ học chuẩn tại trường đại học
  */
 export const STANDARD_TIME_SLOTS = [
   { id: 'slot-1', startTime: '08:00', endTime: '09:00', label: '08:00 - 09:00' },
