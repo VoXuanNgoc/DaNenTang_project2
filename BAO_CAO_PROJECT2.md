@@ -8,7 +8,7 @@
 - **Tên dự án**: Study Room Booking App (Ứng dụng Đặt phòng học và Phòng Lab trường Đại học)
 - **Sinh viên thực hiện**: **Võ Xuân Ngọc**
 - **Mã sinh viên (MSSV)**: **23IT180**
-- **Email**: voxuanngoc@example.com
+- **Email**: hingocvoo@gmail.com
 - **Vai trò**: Sinh viên phát triển ứng dụng (Senior React Native Developer & UI/UX Designer)
 - **Kho lưu trữ GitHub**: [https://github.com/VoXuanNgoc/DaNenTang_project2](https://github.com/VoXuanNgoc/DaNenTang_project2)
 - **Thư mục dự án**: `D:\BaiTap\Prooject2`
